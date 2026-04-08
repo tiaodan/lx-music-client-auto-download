@@ -13,6 +13,9 @@ module.exports = {
     path: path.join(__dirname, '../../dist'),
   },
   externals: {
+    electron: 'electron',
+    'electron-is-dev': 'electron-is-dev',
+    'electron-debug': 'electron-debug',
     'font-list': 'font-list',
     'better-sqlite3': 'better-sqlite3',
     'electron-font-manager': 'electron-font-manager',
