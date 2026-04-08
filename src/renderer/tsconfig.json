@@ -1,0 +1,29 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "isolatedModules": true,
+    "paths": {
+      "@common/*": ["common/*"],
+      "@renderer/*": ["renderer/*"],
+      "@static/*": ["static/*"],
+      "@root/*": ["./*"]
+    },
+    "typeRoots": [
+      "./types"
+    ]
+  },
+  "vueCompilerOptions": {
+    "plugins": [
+      "@vue/language-plugin-pug"
+    ]
+  },
+  "include": [
+    "./**/*.ts",
+    "./**/*.vue"
+  ],
+  "exclude": [
+    "../common/**/*",
+    "../main/**/*"
+  ]
+}

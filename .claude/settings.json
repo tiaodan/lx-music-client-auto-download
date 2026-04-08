@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx eslint:*)",
+      "Read(///100.86.118.11/hdd//**)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/lang/zh-cn.json', 'utf8'\\)\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/lang/en-us.json', 'utf8'\\)\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/lang/zh-tw.json', 'utf8'\\)\\)\")"
+    ],
+    "additionalDirectories": [
+      "c:\\A_software\\C_wokspace\\project\\music\\study-music-server-go\\utils"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/check-css-module.js",
+            "timeout": 5,
+            "statusMessage": "Checking CSS Module usage..."
+          }
+        ]
+      }
+    ]
+  }
+}
