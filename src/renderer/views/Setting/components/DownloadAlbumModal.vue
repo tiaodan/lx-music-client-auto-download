@@ -207,7 +207,7 @@ export default {
         }
 
         // 6. 歌曲数量 >= 5，直接下载
-        statusMsg.value = t('download_album_start_download')
+        statusMsg.value = t('download_album_creating_tasks')
 
         const savePath = joinPath(
           appSetting['download.savePath'],
@@ -215,16 +215,43 @@ export default {
           filterFileName(_albumName) || '未知专辑',
         )
 
-        await createDownloadTasksWithPath(
+        const totalTasks = await createDownloadTasksWithPath(
           matchedList.list,
           appSetting['download.quality'] ?? '320k',
           savePath,
+          (status, info) => {
+            if (status === 'created') {
+              statusMsg.value = t('download_album_tasks_created').replace('{count}', String(info.total))
+            } else if (status === 'downloading') {
+              if (info.currentSong) {
+                statusMsg.value = t('download_album_downloading_song')
+                  .replace('{current}', info.currentSong)
+                  .replace('{completed}', String(info.completed))
+                  .replace('{total}', String(info.total))
+              } else {
+                statusMsg.value = t('download_album_downloading')
+                  .replace('{completed}', String(info.completed))
+                  .replace('{total}', String(info.total))
+              }
+            } else if (status === 'complete') {
+              statusMsg.value = t('download_album_all_success').replace('{count}', String(info.total))
+              setTimeout(() => {
+                emit('close')
+              }, 1500)
+            } else if (status === 'error') {
+              const failedNames = info.failedSongs?.join('、') ?? ''
+              statusMsg.value = t('download_album_partial_success')
+                .replace('{success}', String(info.completed))
+                .replace('{failed}', String(info.failed))
+                .replace('{names}', failedNames)
+            }
+          },
         )
 
-        statusMsg.value = t('download_album_success')
-        setTimeout(() => {
-          emit('close')
-        }, 1500)
+        if (!totalTasks) {
+          errorMsg.value = t('download_album_no_tasks')
+          isLoading.value = false
+        }
       } catch (err) {
         console.error(err)
         errorMsg.value = t('download_album_error') + err.message

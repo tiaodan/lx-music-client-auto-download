@@ -360,9 +360,16 @@ export const createDownloadTasks = async(list: LX.Music.MusicInfoOnline[], quali
   // 确保下载列表已初始化，避免 filterTask 检查遗漏数据库中已有的任务
   await getDownloadList()
 
-  const tasks = filterTask(await window.lx.worker.download.createDownloadTasks(list, quality,
-    appSetting['download.fileName'],
-    toRaw(qualityList.value), listId),
+  // 深拷贝所有参数，移除 Vue 响应式代理对象
+  const rawList: LX.Music.MusicInfoOnline[] = JSON.parse(JSON.stringify(list))
+  const rawFileName = String(appSetting['download.fileName'])
+  const rawQualityList: LX.QualityList = JSON.parse(JSON.stringify(qualityList.value ?? {}))
+  const rawQuality = String(quality)
+  const rawListId = listId ?? null
+
+  const tasks = filterTask(await window.lx.worker.download.createDownloadTasks(rawList, rawQuality,
+    rawFileName,
+    rawQualityList, rawListId),
   )
 
   if (tasks.length) await addTasks(tasks)
@@ -374,19 +381,38 @@ export const createDownloadTasks = async(list: LX.Music.MusicInfoOnline[], quali
  * @param list 要下载的歌曲
  * @param quality 下载音质
  * @param customSavePath 自定义保存路径
+ * @param onStatus 状态回调 (status: 'created' | 'downloading' | 'complete' | 'error', info: { total, completed, failed, currentSong?, errorMsg? })
+ * @returns 创建的任务数量
  */
-export const createDownloadTasksWithPath = async(list: LX.Music.MusicInfoOnline[], quality: LX.Quality, customSavePath: string) => {
-  if (!list.length) return
+export const createDownloadTasksWithPath = async(
+  list: LX.Music.MusicInfoOnline[],
+  quality: LX.Quality,
+  customSavePath: string,
+  onStatus?: (status: 'created' | 'downloading' | 'complete' | 'error', info: {
+    total: number
+    completed: number
+    failed: number
+    currentSong?: string
+    failedSongs?: string[]
+  }) => void,
+): Promise<number> => {
+  if (!list.length) return 0
 
   // 确保下载列表已初始化，避免 filterTask 检查遗漏数据库中已有的任务
   await getDownloadList()
 
-  const tasks = filterTask(await window.lx.worker.download.createDownloadTasks(list, quality,
-    appSetting['download.fileName'],
-    toRaw(qualityList.value), undefined),
+  // 深拷贝所有参数，移除 Vue 响应式代理对象
+  const rawList: LX.Music.MusicInfoOnline[] = JSON.parse(JSON.stringify(list))
+  const rawFileName = String(appSetting['download.fileName'])
+  const rawQualityList: LX.QualityList = JSON.parse(JSON.stringify(qualityList.value ?? {}))
+  const rawQuality = String(quality)
+
+  const tasks = filterTask(await window.lx.worker.download.createDownloadTasks(rawList, rawQuality,
+    rawFileName,
+    rawQualityList, null),
   )
 
-  if (!tasks.length) return
+  if (!tasks.length) return 0
 
   // 更新每个任务的保存路径为自定义路径
   for (const task of tasks) {
@@ -394,8 +420,66 @@ export const createDownloadTasksWithPath = async(list: LX.Music.MusicInfoOnline[
     updateFilePath(task, filePath)
   }
 
+  const taskCount = tasks.length
+
   if (tasks.length) await addTasks(tasks)
+
+  // 回调：任务已创建
+  onStatus?.('created', { total: taskCount, completed: 0, failed: 0 })
+
+  // 监听下载进度
+  if (onStatus) {
+    const taskIds = new Set(tasks.map(t => t.id))
+    const failedSongs: string[] = []
+    let checkTimer: NodeJS.Timeout | null = null
+
+    const checkProgress = () => {
+      let completed = 0
+      let failed = 0
+      let currentSong: string | undefined
+      let allDone = true
+
+      for (const task of downloadList) {
+        if (!taskIds.has(task.id)) continue
+
+        if (task.status === DOWNLOAD_STATUS.COMPLETED) {
+          completed++
+        } else if (task.status === DOWNLOAD_STATUS.ERROR) {
+          failed++
+          if (!failedSongs.includes(task.metadata.musicInfo.name)) {
+            failedSongs.push(task.metadata.musicInfo.name)
+          }
+        } else if (task.status === DOWNLOAD_STATUS.RUN) {
+          currentSong = task.metadata.musicInfo.name
+          allDone = false
+        } else {
+          allDone = false
+        }
+      }
+
+      if (failed > 0 || completed > 0) {
+        onStatus('downloading', { total: taskCount, completed, failed, currentSong, failedSongs })
+      }
+
+      if (allDone) {
+        // 所有任务完成
+        if (failed > 0) {
+          onStatus('error', { total: taskCount, completed, failed, failedSongs })
+        } else {
+          onStatus('complete', { total: taskCount, completed, failed })
+        }
+        if (checkTimer) clearInterval(checkTimer)
+      }
+    }
+
+    // 每500ms检查一次进度
+    checkTimer = setInterval(checkProgress, 500)
+    // 立即检查一次
+    checkProgress()
+  }
+
   void checkStartTask()
+  return taskCount
 }
 
 /**

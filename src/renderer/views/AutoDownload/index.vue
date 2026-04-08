@@ -7,22 +7,22 @@ div(:class="$style.container")
     .form-group
       label {{ $t('auto_download_album_label') }}
       base-input(
-        :class="$style.formInput"
         v-model="albumName"
+        :class="$style.formInput"
         :placeholder="$t('auto_download_album_placeholder')"
       )
     .form-group
       label {{ $t('auto_download_singer_label') }}
       base-input(
-        :class="$style.formInput"
         v-model="singerName"
+        :class="$style.formInput"
         :placeholder="$t('auto_download_singer_placeholder')"
       )
     .form-group
       label {{ $t('auto_download_count_label') }}
       base-input(
-        :class="$style.formInput"
         v-model="albumCount"
+        :class="$style.formInput"
         type="number"
         :placeholder="$t('auto_download_count_placeholder')"
       )
@@ -213,7 +213,7 @@ export default {
         }
 
         // 5. 歌曲数量 >= 5，直接下载
-        statusMsg.value = t('auto_download_start_download')
+        statusMsg.value = t('auto_download_creating_tasks')
 
         const savePath = joinPath(
           appSetting['download.savePath'],
@@ -221,16 +221,48 @@ export default {
           filterFileName(_albumName) || '未知专辑',
         )
 
-        await createDownloadTasksWithPath(
+        const totalTasks = await createDownloadTasksWithPath(
           matchedList.list,
           appSetting['download.quality'] ?? '320k',
           savePath,
+          (status, info) => {
+            if (status === 'created') {
+              statusMsg.value = t('auto_download_tasks_created').replace('{count}', String(info.total))
+            } else if (status === 'downloading') {
+              if (info.currentSong) {
+                statusMsg.value = t('auto_download_downloading_song')
+                  .replace('{current}', info.currentSong)
+                  .replace('{completed}', String(info.completed))
+                  .replace('{total}', String(info.total))
+              } else {
+                statusMsg.value = t('auto_download_downloading')
+                  .replace('{completed}', String(info.completed))
+                  .replace('{total}', String(info.total))
+              }
+            } else if (status === 'complete') {
+              statusMsg.value = t('auto_download_all_success').replace('{count}', String(info.total))
+              albumName.value = ''
+              singerName.value = ''
+              albumCount.value = null
+              isLoading.value = false
+            } else if (status === 'error') {
+              const failedNames = info.failedSongs?.join('、') ?? ''
+              statusMsg.value = t('auto_download_partial_success')
+                .replace('{success}', String(info.completed))
+                .replace('{failed}', String(info.failed))
+                .replace('{names}', failedNames)
+              albumName.value = ''
+              singerName.value = ''
+              albumCount.value = null
+              isLoading.value = false
+            }
+          },
         )
 
-        statusMsg.value = t('auto_download_success')
-        albumName.value = ''
-        singerName.value = ''
-        albumCount.value = null
+        if (!totalTasks) {
+          errorMsg.value = t('auto_download_no_tasks')
+          isLoading.value = false
+        }
       } catch (err) {
         console.error(err)
         errorMsg.value = t('auto_download_error') + err.message
