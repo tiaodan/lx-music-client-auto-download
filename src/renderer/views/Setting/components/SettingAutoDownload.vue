@@ -201,8 +201,10 @@ export default {
         foundPlaylistSongs.value = matchedList.list
         statusMsg.value = ''
 
-        const _singerName = matchedList.info.author ?? ''
-        const _albumName = matchedList.info.name ?? ''
+        // 使用用户输入的歌手名和专辑名创建下载目录
+        // name 和 singer 在函数开头已定义：用户输入的专辑名和歌手名
+        const _albumName = name
+        const _singerName = singer
 
         if (count < 5) {
           confirmList.value = matchedList.list
@@ -221,8 +223,8 @@ export default {
         statusMsg.value = t('auto_download_start_download')
         const savePath = joinPath(
           appSetting['download.savePath'],
-          filterFileName(matchedList.info.author) || '未知歌手',
-          filterFileName(matchedList.info.name) || '未知专辑',
+          filterFileName(_singerName) || '未知歌手',
+          filterFileName(_albumName) || '未知专辑',
         )
         await createDownloadTasksWithPath(
           matchedList.list,

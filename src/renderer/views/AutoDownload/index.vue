@@ -186,9 +186,10 @@ export default {
           return
         }
 
-        // 3. 从歌单信息中提取歌手名和专辑名
-        const _singerName = matchedList.info.author ?? ''
-        const _albumName = matchedList.info.name ?? ''
+        // 3. 使用用户输入的歌手名和专辑名创建下载目录
+        // name 和 singer 在函数开头已定义：用户输入的专辑名和歌手名
+        const _albumName = name
+        const _singerName = singer
 
         // 显示匹配到的歌单信息
         matchedPlaylistInfo.value = {
