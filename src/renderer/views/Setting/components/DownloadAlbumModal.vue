@@ -71,7 +71,7 @@ export default {
   },
   emits: ['close'],
   setup(props, { emit }) {
-    const { t } = useI18n()
+    const t = useI18n()
     const visible = ref(props.show)
     const searchInput = ref('')
     const albumCount = ref<number | null>(null)

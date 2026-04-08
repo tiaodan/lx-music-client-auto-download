@@ -201,16 +201,16 @@ export default {
         foundPlaylistSongs.value = matchedList.list
         statusMsg.value = ''
 
-        const singerName = matchedList.info.author ?? ''
-        const albumName = matchedList.info.name ?? ''
+        const _singerName = matchedList.info.author ?? ''
+        const _albumName = matchedList.info.name ?? ''
 
         if (count < 5) {
           confirmList.value = matchedList.list
-          confirmAlbumName.value = albumName || singerName
+          confirmAlbumName.value = _albumName || _singerName
           confirmSavePath.value = joinPath(
             appSetting['download.savePath'],
-            filterFileName(singerName) || '未知歌手',
-            filterFileName(albumName) || '未知专辑',
+            filterFileName(_singerName) || '未知歌手',
+            filterFileName(_albumName) || '未知专辑',
           )
           isLoading.value = false
           statusMsg.value = ''

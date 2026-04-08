@@ -80,7 +80,7 @@ export default {
     BaseInput,
   },
   setup() {
-    const { t } = useI18n()
+    const t = useI18n()
     const albumName = ref('')
     const singerName = ref('')
     const albumCount = ref(null)
@@ -187,23 +187,23 @@ export default {
         }
 
         // 3. 从歌单信息中提取歌手名和专辑名
-        const singerName = matchedList.info.author ?? ''
-        const albumName = matchedList.info.name ?? ''
+        const _singerName = matchedList.info.author ?? ''
+        const _albumName = matchedList.info.name ?? ''
 
         // 显示匹配到的歌单信息
         matchedPlaylistInfo.value = {
-          name: albumName || singerName,
+          name: _albumName || _singerName,
           songs: matchedList.list,
         }
 
         // 4. 如果歌曲数量 < 5，弹窗确认
         if (count < 5) {
           confirmList.value = matchedList.list
-          confirmAlbumName.value = albumName || singerName
+          confirmAlbumName.value = _albumName || _singerName
           confirmSavePath.value = joinPath(
             appSetting['download.savePath'],
-            filterFileName(singerName) || '未知歌手',
-            filterFileName(albumName) || '未知专辑',
+            filterFileName(_singerName) || '未知歌手',
+            filterFileName(_albumName) || '未知专辑',
           )
           isLoading.value = false
           statusMsg.value = ''
@@ -216,8 +216,8 @@ export default {
 
         const savePath = joinPath(
           appSetting['download.savePath'],
-          filterFileName(singerName) || '未知歌手',
-          filterFileName(albumName) || '未知专辑',
+          filterFileName(_singerName) || '未知歌手',
+          filterFileName(_albumName) || '未知专辑',
         )
 
         await createDownloadTasksWithPath(
