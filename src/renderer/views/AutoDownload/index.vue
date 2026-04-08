@@ -114,20 +114,48 @@ export default {
 
     const handleConfirmDownload = async() => {
       showConfirmModal.value = false
-      statusMsg.value = t('auto_download_start_download')
+      statusMsg.value = t('auto_download_creating_tasks')
 
       try {
+        // 深拷贝歌曲列表，确保没有 Vue 响应式代理
+        const rawConfirmList = JSON.parse(JSON.stringify(confirmList.value))
         await createDownloadTasksWithPath(
-          confirmList.value,
+          rawConfirmList,
           appSetting['download.quality'] ?? '320k',
           confirmSavePath.value,
+          (status, info) => {
+            if (status === 'created') {
+              statusMsg.value = t('auto_download_tasks_created').replace('{count}', String(info.total))
+            } else if (status === 'downloading') {
+              if (info.currentSong) {
+                statusMsg.value = t('auto_download_downloading_song')
+                  .replace('{current}', info.currentSong)
+                  .replace('{completed}', String(info.completed))
+                  .replace('{total}', String(info.total))
+              } else {
+                statusMsg.value = t('auto_download_downloading')
+                  .replace('{completed}', String(info.completed))
+                  .replace('{total}', String(info.total))
+              }
+            } else if (status === 'complete') {
+              statusMsg.value = t('auto_download_all_success').replace('{count}', String(info.total))
+              albumName.value = ''
+              singerName.value = ''
+              albumCount.value = null
+              isLoading.value = false
+            } else if (status === 'error') {
+              const failedNames = info.failedSongs?.join('、') ?? ''
+              statusMsg.value = t('auto_download_partial_success')
+                .replace('{success}', String(info.completed))
+                .replace('{failed}', String(info.failed))
+                .replace('{names}', failedNames)
+              albumName.value = ''
+              singerName.value = ''
+              albumCount.value = null
+              isLoading.value = false
+            }
+          },
         )
-
-        statusMsg.value = t('auto_download_success')
-        // 清空输入
-        albumName.value = ''
-        singerName.value = ''
-        albumCount.value = null
       } catch (err) {
         console.error(err)
         errorMsg.value = t('auto_download_error') + err.message
@@ -221,8 +249,10 @@ export default {
           filterFileName(_albumName) || '未知专辑',
         )
 
+        // 深拷贝歌曲列表，确保没有 Vue 响应式代理
+        const rawSongList = JSON.parse(JSON.stringify(matchedList.list))
         const totalTasks = await createDownloadTasksWithPath(
-          matchedList.list,
+          rawSongList,
           appSetting['download.quality'] ?? '320k',
           savePath,
           (status, info) => {

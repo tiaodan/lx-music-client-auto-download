@@ -117,19 +117,43 @@ export default {
     // 确认下载
     const handleConfirmDownload = async() => {
       showConfirmModal.value = false
-      statusMsg.value = t('download_album_start_download')
+      statusMsg.value = t('download_album_creating_tasks')
 
       try {
+        // 深拷贝歌曲列表，确保没有 Vue 响应式代理
+        const rawConfirmList = JSON.parse(JSON.stringify(confirmList.value))
         await createDownloadTasksWithPath(
-          confirmList.value,
+          rawConfirmList,
           appSetting['download.quality'] ?? '320k',
           confirmSavePath.value,
+          (status, info) => {
+            if (status === 'created') {
+              statusMsg.value = t('download_album_tasks_created').replace('{count}', String(info.total))
+            } else if (status === 'downloading') {
+              if (info.currentSong) {
+                statusMsg.value = t('download_album_downloading_song')
+                  .replace('{current}', info.currentSong)
+                  .replace('{completed}', String(info.completed))
+                  .replace('{total}', String(info.total))
+              } else {
+                statusMsg.value = t('download_album_downloading')
+                  .replace('{completed}', String(info.completed))
+                  .replace('{total}', String(info.total))
+              }
+            } else if (status === 'complete') {
+              statusMsg.value = t('download_album_all_success').replace('{count}', String(info.total))
+              setTimeout(() => {
+                emit('close')
+              }, 1500)
+            } else if (status === 'error') {
+              const failedNames = info.failedSongs?.join('、') ?? ''
+              statusMsg.value = t('download_album_partial_success')
+                .replace('{success}', String(info.completed))
+                .replace('{failed}', String(info.failed))
+                .replace('{names}', failedNames)
+            }
+          },
         )
-
-        statusMsg.value = t('download_album_success')
-        setTimeout(() => {
-          emit('close')
-        }, 1500)
       } catch (err) {
         console.error(err)
         errorMsg.value = t('download_album_error') + err.message
@@ -215,8 +239,10 @@ export default {
           filterFileName(_albumName) || '未知专辑',
         )
 
+        // 深拷贝歌曲列表，确保没有 Vue 响应式代理
+        const rawSongList = JSON.parse(JSON.stringify(matchedList.list))
         const totalTasks = await createDownloadTasksWithPath(
-          matchedList.list,
+          rawSongList,
           appSetting['download.quality'] ?? '320k',
           savePath,
           (status, info) => {
