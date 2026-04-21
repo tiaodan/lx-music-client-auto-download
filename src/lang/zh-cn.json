@@ -46,6 +46,7 @@
   "desktop_lyric__win_top_on": "置顶歌词界面",
   "download": "下载",
   "auto_download": "自动下载",
+  "rank_auto_import": "榜单自动入库",
   "auto_download_title": "自动下载",
   "auto_download_tip": "通过输入歌手名、专辑名和歌曲数量快速搜索并下载专辑歌曲",
   "auto_download_example": "示例：歌手名输入「周杰伦」，专辑名输入「七里香」",

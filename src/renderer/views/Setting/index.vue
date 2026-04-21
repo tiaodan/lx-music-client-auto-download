@@ -69,6 +69,7 @@ import SettingOther from './components/SettingOther.vue'
 import SettingUpdate from './components/SettingUpdate.vue'
 import SettingAbout from './components/SettingAbout.vue'
 import SettingAutoDownload from './components/SettingAutoDownload.vue'
+import SettingRankAutoImport from './components/SettingRankAutoImport.vue'
 
 export default {
   name: 'Setting',
@@ -90,6 +91,7 @@ export default {
     SettingUpdate,
     SettingAbout,
     SettingAutoDownload,
+    SettingRankAutoImport,
   },
   setup() {
     const t = useI18n()
@@ -100,6 +102,7 @@ export default {
     const tocList = computed(() => {
       return [
         { id: 'SettingAutoDownload', title: t('auto_download') },
+        { id: 'SettingRankAutoImport', title: t('rank_auto_import') },
         { id: 'SettingBasic', title: t('setting__basic') },
         { id: 'SettingPlay', title: t('setting__play') },
         { id: 'SettingPlayDetail', title: t('setting__play_detail') },
